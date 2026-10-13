@@ -1,0 +1,15 @@
+{
+  "_note": "SkyPulse risk qaydalari. Her siyahi [sari, narinci, qirmizi] hedleridir. Bunlar SkyPulse qiymetlendirmesidir, resmi xeberdarliq deyil.",
+  "gust_kmh": [50, 70, 90],
+  "precip_day_mm": [15, 30, 50],
+  "snow_day_cm": [2, 10, 25],
+  "heat_c": [35, 38, 42],
+  "cold_c": [-5, -15, -25],
+  "visibility_m": [1000, 500, 200],
+  "wave_m": [1.5, 2.5, 4.0],
+  "thunder_codes": [95, 96, 99],
+  "thunder_level": 2,
+  "quake_radius_km": 300,
+  "quake_min_mag": 2.5,
+  "quake_alert_mag": 4.5
+}
