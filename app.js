@@ -44,6 +44,7 @@
     business: '<path d="M3 21h18M5 21V8l7-4 7 4v13"/><path d="M9 21v-5h6v5M9 11h.01M15 11h.01"/>',
     alerts: '<path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/>',
     settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-2.7-1.1l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3 14.3H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.1-2.7l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 2.7-1.1V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1.3z"/>',
+    share: '<circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.4M8.2 13.2l7.6 4.4"/>',
     star: '<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1 6.2-5.5-2.9-5.5 2.9 1-6.2L3 9.6l6.2-.9z"/>',
     locate: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="7"/>'
   };
@@ -364,7 +365,7 @@
           <div><dt>${t("precip")}</dt><dd class="num">${round(c.precipitation, 1)} <small>mm</small></dd></div>
         </dl>
         <div class="loc-f"><span class="muted small">Open-Meteo · ${t("updated")} <span class="num">${S.wxTime ? hhmm(S.wxTime) : "–"}</span>${S.wxCached ? " · " + t("cached") : ""}</span>
-          <span class="loc-act"><button class="icon-btn" data-act="save-place" title="${t("save_place")}" aria-label="${t("save_place")}">${navSvg("star")}</button><button class="icon-btn" data-act="geo" title="${t("my_location")}" aria-label="${t("my_location")}">${navSvg("locate")}</button><button class="btn primary sm" data-act="monitor-place">${t("monitor_this")}</button></span></div>
+          <span class="loc-act"><button class="icon-btn" data-act="share" title="${t("share")}" aria-label="${t("share")}">${navSvg("share")}</button><button class="icon-btn" data-act="save-place" title="${t("save_place")}" aria-label="${t("save_place")}">${navSvg("star")}</button><button class="icon-btn" data-act="geo" title="${t("my_location")}" aria-label="${t("my_location")}">${navSvg("locate")}</button><button class="btn primary sm" data-act="monitor-place">${t("monitor_this")}</button></span></div>
       </div>`;
 
     const alerts = collectAlerts();
@@ -796,6 +797,41 @@
   }
 
   // ---------- render ----------
+  function shareUrl() {
+    const p = S.place, u = new URL(location.origin + location.pathname);
+    u.searchParams.set("place", p.name); u.searchParams.set("lat", (+p.lat).toFixed(4)); u.searchParams.set("lon", (+p.lon).toFixed(4));
+    return u.toString();
+  }
+  function shareText() {
+    const p = S.place, c = S.wx && S.wx.current;
+    return "SkyPulse · " + p.name + (c ? ": " + round(c.temperature_2m) + "°, " + wcText(c.weather_code) + ", " + t("gusts").toLowerCase() + " " + round(c.wind_gusts_10m) + " km/h" : "") + " — " + t("share_tagline");
+  }
+  async function openShare() {
+    const url = shareUrl(), text = shareText();
+    if (navigator.share && window.matchMedia && matchMedia("(pointer:coarse)").matches) {
+      try { await navigator.share({ title: "SkyPulse", text, url }); return; } catch (e) { if (e && e.name === "AbortError") return; }
+    }
+    const enc = encodeURIComponent, full = text + " " + url;
+    const m = $("#modal");
+    m.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="shH"><h2 id="shH">${t("share_title")}</h2>
+      <p class="small muted">${esc(text)}</p>
+      <div class="share-grid">
+        <a class="share-b wa" href="https://wa.me/?text=${enc(full)}" target="_blank" rel="noopener">WhatsApp</a>
+        <a class="share-b tg" href="https://t.me/share/url?url=${enc(url)}&text=${enc(text)}" target="_blank" rel="noopener">Telegram</a>
+        <a class="share-b fb" href="https://www.facebook.com/sharer/sharer.php?u=${enc(url)}" target="_blank" rel="noopener">Facebook</a>
+        <a class="share-b x" href="https://twitter.com/intent/tweet?text=${enc(text)}&url=${enc(url)}" target="_blank" rel="noopener">X</a>
+        <a class="share-b li" href="https://www.linkedin.com/sharing/share-offsite/?url=${enc(url)}" target="_blank" rel="noopener">LinkedIn</a>
+        <a class="share-b em" href="mailto:?subject=${enc("SkyPulse · " + S.place.name)}&body=${enc(full)}">E-mail</a>
+      </div>
+      <div class="field" style="margin-top:14px"><label for="shUrl">${t("share_link")}</label><div class="inrow"><input id="shUrl" value="${esc(url)}" readonly><button class="btn primary sm" data-act="copy-link">${t("copy")}</button></div></div>
+      <div class="row-btns"><button class="btn" data-act="close-modal">${t("cancel")}</button></div></div>`;
+    m.hidden = false;
+  }
+  async function copyLink() {
+    const inp = $("#shUrl"); const v = inp ? inp.value : shareUrl();
+    try { await navigator.clipboard.writeText(v); toast(t("copied")); }
+    catch (e) { if (inp) { inp.focus(); inp.select(); } toast(t("copy_manual")); }
+  }
   function localTime() {
     try { return S.wx && S.wx.timezone ? new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", timeZone: S.wx.timezone }) : ""; } catch (e) { return ""; }
   }
@@ -806,7 +842,7 @@
       <span class="lb-name"><b>${esc(p.name)}</b><span class="muted">${esc(placeLabel(p))}</span></span>
       ${c ? `<span class="lb-wx">${wxIcon(c.weather_code)}<b class="num">${round(c.temperature_2m)}°</b><span class="muted lb-c">${wcText(c.weather_code)}</span></span>
       <span class="lb-m num muted"><span>${t("gusts")} ${round(c.wind_gusts_10m)} km/h</span><span>${t("local_time")} ${localTime()}</span></span>` : `<span class="muted small">${S.wxLoading ? t("loading") : ""}</span>`}
-      <span class="lb-act"><button class="btn sm" data-act="change-place">${t("change_place")}</button><button class="btn sm primary" data-act="monitor-place">${t("monitor_this")}</button></span></div>`;
+      <span class="lb-act"><button class="btn sm share-btn" data-act="share" aria-label="${t("share")}">${navSvg("share")}<span>${t("share")}</span></button><button class="btn sm" data-act="change-place">${t("change_place")}</button><button class="btn sm primary" data-act="monitor-place">${t("monitor_this")}</button></span></div>`;
   }
   function showIntro() {
     const el = document.getElementById("intro"); if (!el) return;
@@ -899,6 +935,16 @@
       if (!S.saved.some((s) => s.lat === S.place.lat && s.lon === S.place.lon)) { S.saved.push(S.place); store.set("saved", S.saved); }
       toast(t("added")); render();
     } else if (act === "pick-saved") setPlace(S.saved[+a.dataset.i]);
+    else if (act === "live-origin") { if (S.liveOn) { stopLive(); render(); } else startLive(true); }
+    else if (act === "share") openShare();
+    else if (act === "copy-link") copyLink();
+    else if (act === "change-place") { window.scrollTo(0, 0); $("#q").focus(); }
+    else if (act === "intro-skip") closeIntro();
+    else if (act === "intro-geo") {
+      if (!navigator.geolocation) { toast(t("err_geo")); return; }
+      navigator.geolocation.getCurrentPosition((pos) => { closeIntro(); setPlace({ name: t("my_location"), lat: +pos.coords.latitude.toFixed(4), lon: +pos.coords.longitude.toFixed(4) }); }, () => toast(t("err_geo")), { timeout: 10000 });
+    }
+    else if (act === "pick-world") { const w = S.world.items[+a.dataset.i].c; setPlace({ name: cityName(w), lat: w[3], lon: w[4] }); window.scrollTo(0, 0); }
     else if (act === "del-saved") { S.saved.splice(+a.dataset.i, 1); store.set("saved", S.saved); render(); }
     else if (act === "geo") {
       if (!navigator.geolocation) { toast(t("err_geo")); return; }
@@ -935,6 +981,14 @@
   // ---------- başlanğıc ----------
   async function init() {
     attachSearch($("#q"), $("#qres"), setPlace);
+    try {
+      const qs = new URLSearchParams(location.search), la = parseFloat(qs.get("lat")), lo = parseFloat(qs.get("lon"));
+      if (!isNaN(la) && !isNaN(lo) && Math.abs(la) <= 90 && Math.abs(lo) <= 180) {
+        S.place = { name: (qs.get("place") || "").slice(0, 60) || la.toFixed(2) + ", " + lo.toFixed(2), country: "", lat: la, lon: lo };
+        store.set("place", S.place); store.set("entered", true);
+        history.replaceState(null, "", location.pathname + location.hash);
+      }
+    } catch (e) { /* keç */ }
     if (!store.get("entered", false)) setTimeout(showIntro, 0);
     render();
     try { S.rules = await fetchJSON("rules.json", 5000); }

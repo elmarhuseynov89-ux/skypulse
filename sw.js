@@ -1,6 +1,6 @@
 // Sadə service worker: yalnız tətbiqin öz fayllarını keşləyir.
 // Hava və zəlzələ məlumatları heç vaxt keşdən "təzə" kimi verilmir — onları app.js idarə edir.
-const CACHE = "skypulse-v3";
+const CACHE = "skypulse-v4";
 const FILES = ["./", "./index.html", "./app.js", "./i18n.js", "./tech.js", "./config.js", "./rules.json", "./icon.svg", "./manifest.webmanifest"];
 self.addEventListener("install", (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", (e) => {
