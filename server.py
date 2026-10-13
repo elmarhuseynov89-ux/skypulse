@@ -546,7 +546,7 @@ class Handler(SimpleHTTPRequestHandler):
             codes = [c for c in urllib.parse.parse_qs(u.query).get("codes", [""])[0].split(",") if c][:50]
             out = []
             for c in codes:
-                m = db("SELECT code,name,status,end_at,interval_min FROM monitors WHERE code=?", (c,), one=True)
+                m = db("SELECT code,name,status,end_at,interval_min,next_due FROM monitors WHERE code=?", (c,), one=True)
                 if m:
                     out.append(dict(m))
             return self.send_json(200, {"monitors": out})
