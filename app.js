@@ -240,13 +240,14 @@
   // ---------- görünüşlər ----------
   function promosHtml() {
     const P = C.promos || {};
-    const items = ["course", "kunefe"].filter((k) => P[k] && P[k].enabled).map((k) => {
-      const p = P[k], txt = (p.text && (p.text[S.lang] || p.text.en)) || "";
-      const inner = `<b>${esc(p.title)}</b><span>${esc(txt)}</span>`;
-      return p.link ? `<a class="promo" href="${esc(p.link)}" target="_blank" rel="noopener">${inner}</a>` : `<div class="promo">${inner}</div>`;
+    const items = ["kunefe", "course"].filter((k) => P[k] && P[k].enabled).map((k) => {
+      const p = P[k], txt = (p.text && (p.text[S.lang] || p.text.en)) || "", badge = p.badge ? (p.badge[S.lang] || p.badge.en) : "";
+      const inner = `<span class="promo-b">${esc(badge)}</span><span class="promo-t"><b>${esc(p.title)}</b><span>${esc(txt)}</span></span>${p.link ? `<span class="promo-l">${esc(p.linkLabel || "→")}</span>` : ""}`;
+      return p.link ? `<a class="promo promo-${k}" href="${esc(p.link)}" target="_blank" rel="noopener">${inner}</a>` : `<div class="promo promo-${k}">${inner}</div>`;
     });
-    return (items.length ? `<div class="promos">${items.join("")}</div>` : "") + `<p class="footer">${t("footer_sources")}</p>`;
+    return (items.length ? `<div class="promos" aria-label="${t("partners")}">${items.join("")}</div>` : "") + `<p class="footer">${t("footer_sources")}</p>`;
   }
+
   function placeLabel(p) { return [p.admin, p.country].filter(Boolean).join(", "); }
 
   // ---------- rəng köməkçiləri ----------
@@ -795,11 +796,40 @@
   }
 
   // ---------- render ----------
+  function localTime() {
+    try { return S.wx && S.wx.timezone ? new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", timeZone: S.wx.timezone }) : ""; } catch (e) { return ""; }
+  }
+  function renderLocbar() {
+    const el = document.getElementById("locbar"); if (!el) return;
+    const p = S.place, c = S.wx && S.wx.current;
+    el.innerHTML = `<div class="lb-in"><span class="lb-pin">${navSvg("locate")}</span>
+      <span class="lb-name"><b>${esc(p.name)}</b><span class="muted">${esc(placeLabel(p))}</span></span>
+      ${c ? `<span class="lb-wx">${wxIcon(c.weather_code)}<b class="num">${round(c.temperature_2m)}°</b><span class="muted lb-c">${wcText(c.weather_code)}</span></span>
+      <span class="lb-m num muted"><span>${t("gusts")} ${round(c.wind_gusts_10m)} km/h</span><span>${t("local_time")} ${localTime()}</span></span>` : `<span class="muted small">${S.wxLoading ? t("loading") : ""}</span>`}
+      <span class="lb-act"><button class="btn sm" data-act="change-place">${t("change_place")}</button><button class="btn sm primary" data-act="monitor-place">${t("monitor_this")}</button></span></div>`;
+  }
+  function showIntro() {
+    const el = document.getElementById("intro"); if (!el) return;
+    const picks = WORLD.slice(0, 10).map((c, i) => `<button class="ichip" data-intro="${i}">${esc(cityName(c))}</button>`).join("");
+    el.innerHTML = `<div class="intro-in"><div class="intro-brand"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#0B1222" stroke="rgba(148,170,220,.3)"/><path d="M6 18h5l3-7 4 12 3-8 2 3h3" fill="none" stroke="#38BDF8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>SkyPulse</div>
+      <h1>${t("intro_h")}</h1><p class="intro-p">${t("intro_p")}</p>
+      <div class="intro-search search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="iq" type="search" autocomplete="off" placeholder="${t("intro_ph")}" aria-label="${t("intro_ph")}"><div class="results" id="iqres" hidden></div></div>
+      <div class="intro-row"><button class="btn primary" data-act="intro-geo">${navSvg("locate")} ${t("my_location")}</button><button class="btn" data-act="intro-skip">${t("intro_continue")} ${esc(S.place.name)} →</button></div>
+      <div class="intro-picks"><span class="eyebrow">${t("intro_popular")}</span><div>${picks}</div></div>
+      <div class="intro-feats"><div><b>${t("intro_f1")}</b><span>${t("intro_f1d")}</span></div><div><b>${t("intro_f2")}</b><span>${t("intro_f2d")}</span></div><div><b>${t("intro_f3")}</b><span>${t("intro_f3d")}</span></div><div><b>${t("intro_f4")}</b><span>${t("intro_f4d")}</span></div></div>
+      <div class="intro-lang">${["az", "en", "ru"].map((l) => `<button data-ilang="${l}" aria-pressed="${S.lang === l}">${l.toUpperCase()}</button>`).join("")}</div></div>`;
+    el.hidden = false;
+    attachSearch($("#iq"), $("#iqres"), (r) => { closeIntro(); setPlace(r); });
+    setTimeout(() => { try { $("#iq").focus(); } catch (e) { /* */ } }, 50);
+  }
+  function closeIntro() { const el = document.getElementById("intro"); if (el) el.hidden = true; store.set("entered", true); }
+
   function render() {
     document.documentElement.lang = S.lang;
     $("#lang").value = S.lang;
     $("#q").placeholder = t("search_ph");
     renderNav();
+    renderLocbar();
     const sl = document.getElementById("stLive"), st = document.getElementById("stTg");
     if (sl) { sl.className = "stat" + (S.wx && !S.wxCached && !DEMO ? "" : " off"); sl.innerHTML = "<i></i>" + (DEMO ? "DEMO · " + t("tag_forecast") : (S.wxCached ? t("cached") : "LIVE · Open-Meteo" + (S.wxTime ? " " + hhmm(S.wxTime) : ""))); }
     if (st) { const n = Object.values(S.monStatus).filter((m) => m.status === "active").length; st.className = "stat" + (n ? "" : " off"); st.innerHTML = "<i></i>Telegram" + (n ? " · " + n : ""); }
@@ -846,11 +876,16 @@
   document.addEventListener("click", (e) => {
     const nav = e.target.closest("[data-nav]");
     if (nav) { go(nav.dataset.nav); return; }
-    if (!e.target.closest(".search") && !e.target.closest(".field")) document.querySelectorAll(".results").forEach((b) => { b.hidden = true; });
+    if (!e.target.closest(".search") && !e.target.closest(".field") && !e.target.closest(".intro-search")) document.querySelectorAll(".results").forEach((b) => { b.hidden = true; });
     const a = e.target.closest("[data-act]");
     if (e.target.id === "modal") { $("#modal").hidden = true; return; }
     const mode = e.target.closest("[data-mode]");
     if (mode) { S.trip.mode = mode.dataset.mode; if (S.trip.mode === "sea" && !S.trip.hazards.includes("wave")) S.trip.hazards.push("wave"); store.set("trip", S.trip); render(); return; }
+    const ip = e.target.closest("[data-intro]");
+    if (ip) { const w = WORLD[+ip.dataset.intro]; closeIntro(); setPlace({ name: cityName(w), lat: w[3], lon: w[4] }); return; }
+    const il = e.target.closest("[data-ilang]");
+    if (il) { S.lang = il.dataset.ilang; store.set("lang", S.lang); render(); showIntro(); return; }
+    if (e.target.closest(".brand")) { showIntro(); return; }
     const af = e.target.closest("[data-afilter]");
     if (af) { S.alertFilter = af.dataset.afilter; render(); return; }
     const lt = e.target.closest("[data-layer]");
@@ -900,6 +935,7 @@
   // ---------- başlanğıc ----------
   async function init() {
     attachSearch($("#q"), $("#qres"), setPlace);
+    if (!store.get("entered", false)) setTimeout(showIntro, 0);
     render();
     try { S.rules = await fetchJSON("rules.json", 5000); }
     catch (e) { S.rules = { gust_kmh: [50, 70, 90], precip_day_mm: [15, 30, 50], snow_day_cm: [2, 10, 25], heat_c: [35, 38, 42], cold_c: [-5, -15, -25], visibility_m: [1000, 500, 200], wave_m: [1.5, 2.5, 4], thunder_codes: [95, 96, 99], thunder_level: 2, quake_radius_km: 300, quake_min_mag: 2.5, quake_alert_mag: 4.5 }; }

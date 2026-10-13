@@ -7,20 +7,26 @@ window.SKYPULSE_CONFIG = {
   promos: {
     course: {
       enabled: true,
-      title: "LTCLB",
-      // Kursun dəqiq adını, mövzusunu və linkini buraya yazın (dərs materiallarından).
-      text: { az: "Kurs layihəsi", en: "Course project", ru: "Курсовой проект" },
+      title: "LTC Lab",
+      badge: { az: "KURS", en: "COURSE", ru: "КУРС" },
+      text: {
+        az: "Süni intellekt mühəndisliyi kursu",
+        en: "AI engineering course",
+        ru: "Курс инженерии искусственного интеллекта"
+      },
       link: ""
     },
     kunefe: {
       enabled: true,
       title: "ES-ES KÜNƏFƏ",
+      badge: { az: "YENİ", en: "NEW", ru: "НОВИНКА" },
       text: {
-        az: "Gənclik m. yaxınlığı · Sifariş: 070 600 84 84 · Instagram @kunefe.az",
-        en: "Near Ganjlik metro · Orders: 070 600 84 84 · Instagram @kunefe.az",
-        ru: "Рядом с м. Гянджлик · Заказ: 070 600 84 84 · Instagram @kunefe.az"
+        az: "Yeni məhsullar: düşbərə, pelmeni, qürzə · Tezliklə: südlü paxlava · Sifariş: 070 600 84 84",
+        en: "New: dushbara, pelmeni, gurza · Coming soon: milk baklava · Orders: 070 600 84 84",
+        ru: "Новинки: дюшбара, пельмени, гюрза · Скоро: молочная пахлава · Заказ: 070 600 84 84"
       },
-      link: "https://www.instagram.com/kunefe.az/"
+      link: "https://www.instagram.com/kunefe.az/",
+      linkLabel: "@kunefe.az"
     }
   }
 };
